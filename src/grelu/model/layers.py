@@ -289,17 +289,37 @@ class Crop(nn.Module):
                 crop_len = int(receptive_field // 2)
             self.layer = nn.ConstantPad1d(-crop_len, 0)
 
+    # def forward(self, x: Tensor) -> Tensor:
+    #     """
+    #     Forward pass
+
+    #     Args:
+    #         x : Input tensor of shape (N, C, L)
+
+    #     Returns:
+    #         Output tensor
+    #     """
+    #     return self.layer(x)
     def forward(self, x: Tensor) -> Tensor:
         """
-        Forward pass
-
+        Forward pass. If input length > 896, crops to middle 896.
+        Otherwise returns original input unchanged.
+        
         Args:
             x : Input tensor of shape (N, C, L)
-
+        
         Returns:
-            Output tensor
+            Output tensor of shape (N, C, L) where L is either original length or 896
         """
-        return self.layer(x)
+        if x.shape[-1] <= 896:
+            return x
+        else:
+            total_crop = x.shape[-1] - 896
+            crop_each_side = total_crop // 2
+            # Handle odd length by cropping one extra from the end if needed
+            crop_start = crop_each_side
+            crop_end = x.shape[-1] - crop_each_side - (total_crop % 2)
+            return x[..., crop_start:crop_end]
 
 
 class Attention(nn.Module):
